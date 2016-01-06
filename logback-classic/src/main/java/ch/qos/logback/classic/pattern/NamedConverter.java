@@ -15,13 +15,26 @@ package ch.qos.logback.classic.pattern;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 public abstract class NamedConverter extends ClassicConverter {
 
   Abbreviator abbreviator = null;
 
+  private static final int CACHE_SIZE = 10000;
+
+  private final Map<String, String> abbrvCache = Collections.synchronizedMap(new LinkedHashMap<String, String>(CACHE_SIZE + 1, 1.0f) {
+      @Override
+      protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
+          return size() > CACHE_SIZE;
+      }
+  });
+
   /**
    * Gets fully qualified name from event.
-   * 
+   *
    * @param event
    *          The LoggingEvent to process, cannot not be null.
    * @return name, must not be null.
@@ -47,10 +60,23 @@ public abstract class NamedConverter extends ClassicConverter {
   public String convert(ILoggingEvent event) {
     String fqn = getFullyQualifiedName(event);
 
-    if (abbreviator == null) {
-      return fqn;
-    } else {
-      return abbreviator.abbreviate(fqn);
-    }
+//    if (abbreviator == null) {
+//      return fqn;
+//    } else {
+//      return abbreviator.abbreviate(fqn);
+//    }
+
+      if (abbreviator == null) {
+          return fqn;
+      } else {
+          final String str = abbrvCache.get(fqn);
+          if (str != null) {
+              return str;
+          } else {
+              final String newStr = abbreviator.abbreviate(fqn);
+              abbrvCache.put(fqn, newStr);
+              return newStr;
+          }
+      }
   }
 }

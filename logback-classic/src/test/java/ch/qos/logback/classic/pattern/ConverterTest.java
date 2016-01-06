@@ -14,9 +14,14 @@
 package ch.qos.logback.classic.pattern;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import ch.qos.logback.core.pattern.Converter;
+import ch.qos.logback.core.rolling.helper.IntegerTokenConverter;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.MDC;
 import org.slf4j.MarkerFactory;
@@ -397,5 +402,24 @@ public class ConverterTest {
 
     String result = converter.convert(event);
     assertEquals("v", result);
+  }
+
+  @Test
+  @Ignore
+  public void performanceTest() {
+    final LoggerConverter converter = new LoggerConverter();
+    converter.setOptionList(Collections.singletonList("0"));
+    converter.start();
+    final LoggingEvent event = makeLoggingEvent(null);
+    for (int i = 0; i < 100000; i++) {
+      converter.convert(event);
+    }
+    for (int run = 0; run < 10; run++) {
+      long startTime = System.nanoTime();
+      for (int i = 0; i < 200000000; i++) {
+        converter.convert(event);
+      }
+      System.out.println("Time: " + (System.nanoTime() - startTime) / 1000000);
+    }
   }
 }
